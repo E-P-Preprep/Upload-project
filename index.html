@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vimeo Secure Upload Portal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.5.0/dist/tabler-icons.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0e1318;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    }
+
+    .portal-wrap {
+      background: #141A20;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+      color: #FAFCFD;
+    }
+
+    /* ── Header ── */
+    .portal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      border-bottom: 0.5px solid rgba(255,255,255,0.1);
+    }
+
+    .vimeo-logo { display: flex; align-items: center; gap: 10px; }
+    .vimeo-logo-text { font-size: 17px; font-weight: 500; letter-spacing: -0.3px; }
+
+    .expiry-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: rgba(250,252,253,0.5);
+      background: rgba(255,255,255,0.07);
+      border: 0.5px solid rgba(255,255,255,0.12);
+      border-radius: 20px; padding: 4px 12px;
+    }
+
+    .expiry-dot { width: 6px; height: 6px; border-radius: 50%; background: #B5E642; flex-shrink: 0; }
+
+    /* ── Body ── */
+    .portal-body { padding: 28px 24px 24px; }
+
+    .section-label {
+      font-size: 11px; font-weight: 500; text-transform: uppercase;
+      letter-spacing: 0.08em; color: rgba(250,252,253,0.4); margin: 0 0 8px;
+    }
+
+    .section-title { font-size: 18px; font-weight: 500; margin: 0 0 22px; line-height: 1.3; }
+
+    /* ── Config panel ── */
+    .config-panel {
+      background: rgba(23,213,255,0.07);
+      border: 0.5px solid rgba(23,213,255,0.35);
+      border-radius: 8px; padding: 14px 16px; margin-bottom: 20px;
+    }
+    .config-header {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+      text-transform: uppercase; color: rgba(23,213,255,0.6); margin-bottom: 10px;
+    }
+    .config-row {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 13px; margin-bottom: 8px;
+    }
+    .config-row:last-child { margin-bottom: 0; }
+    .config-key { color: rgba(23,213,255,0.7); }
+    .config-val { font-weight: 500; color: #17D5FF; }
+
+    /* ── Form fields ── */
+    .field { margin-bottom: 16px; }
+
+    .field label {
+      display: block; font-size: 13px;
+      color: rgba(250,252,253,0.6); margin-bottom: 7px;
+    }
+
+    .field input {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 0.5px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      color: #FAFCFD;
+      font-size: 15px; padding: 10px 14px;
+      outline: none; transition: border-color 0.15s;
+      font-family: inherit;
+    }
+    .field input::placeholder { color: rgba(250,252,253,0.25); }
+    .field input:focus {
+      border-color: #17D5FF;
+      box-shadow: 0 0 0 3px rgba(23,213,255,0.12);
+    }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      border: 1.5px dashed rgba(255,255,255,0.18);
+      border-radius: 12px; padding: 36px 24px;
+      text-align: center; cursor: pointer;
+      transition: border-color 0.18s, background 0.18s;
+      position: relative; margin-bottom: 16px;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #17D5FF; background: rgba(23,213,255,0.07);
+    }
+    .drop-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-icon { font-size: 32px; color: rgba(250,252,253,0.3); margin-bottom: 12px; }
+    .drop-primary { font-size: 15px; font-weight: 500; margin: 0 0 5px; }
+    .drop-sub { font-size: 13px; color: rgba(250,252,253,0.4); margin: 0; }
+    .drop-sub span { color: #17D5FF; text-decoration: underline; }
+
+    /* ── File queued ── */
+    .file-queued {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;
+    }
+    .file-icon { font-size: 22px; color: #17D5FF; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-size { font-size: 12px; color: rgba(250,252,253,0.4); margin-top: 2px; }
+    .file-remove { font-size: 18px; color: rgba(250,252,253,0.35); cursor: pointer; padding: 4px; transition: color 0.15s; }
+    .file-remove:hover { color: rgba(250,252,253,0.8); }
+
+    /* ── T&C ── */
+    .tc-box {
+      background: rgba(255,255,255,0.04);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 14px 16px; margin-bottom: 18px;
+    }
+    .tc-scroll {
+      max-height: 88px; overflow-y: auto; font-size: 12px;
+      color: rgba(250,252,253,0.45); line-height: 1.7; margin-bottom: 12px; padding-right: 4px;
+    }
+    .tc-scroll::-webkit-scrollbar { width: 3px; }
+    .tc-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+    .tc-agree { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+    .tc-agree input[type=checkbox] { accent-color: #17D5FF; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+    .tc-agree-text { font-size: 13px; color: rgba(250,252,253,0.65); }
+
+    /* ── Upload button ── */
+    .upload-btn {
+      width: 100%; background: #17D5FF; color: #141A20;
+      font-size: 15px; font-weight: 500; border: none;
+      border-radius: 8px; padding: 13px; cursor: pointer;
+      transition: opacity 0.15s, filter 0.15s; font-family: inherit;
+    }
+    .upload-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .upload-btn:not(:disabled):hover { filter: brightness(1.08); }
+
+    /* ── Progress ── */
+    .progress-wrap { margin-bottom: 18px; }
+    .progress-bar-bg { height: 4px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 8px; }
+    .progress-bar-fill { height: 100%; background: #17D5FF; border-radius: 4px; transition: width 0.4s ease; }
+    .progress-labels { display: flex; justify-content: space-between; font-size: 12px; color: rgba(250,252,253,0.45); }
+    .progress-detail { font-size: 12px; color: rgba(250,252,253,0.35); margin-top: 6px; }
+
+    /* ── Spinner ── */
+    .uploading-file {
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: 12px 14px; margin-bottom: 20px;
+    }
+    .upload-spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(23,213,255,0.2);
+      border-top-color: #17D5FF;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Success ── */
+    .success-state { text-align: center; padding: 28px 0 12px; }
+    .success-icon {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: rgba(181,230,66,0.12); border: 1.5px solid rgba(181,230,66,0.35);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px; font-size: 24px; color: #B5E642;
+    }
+    .success-title { font-size: 17px; font-weight: 500; margin: 0 0 6px; }
+    .success-sub { font-size: 13px; color: rgba(250,252,253,0.45); margin: 0 0 20px; line-height: 1.6; }
+    .vimeo-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #17D5FF; text-decoration: none; margin-bottom: 20px; }
+    .upload-another { background: transparent; border: 0.5px solid rgba(255,255,255,0.18); color: rgba(250,252,253,0.7); font-size: 13px; border-radius: 8px; padding: 9px 20px; cursor: pointer; font-family: inherit; transition: border-color 0.15s, color 0.15s; }
+    .upload-another:hover { border-color: rgba(255,255,255,0.4); color: #FAFCFD; }
+
+    /* ── Expired ── */
+    .expired-state { text-align: center; padding: 48px 24px; }
+    .expired-icon { font-size: 36px; color: rgba(250,252,253,0.2); margin-bottom: 14px; }
+    .expired-title { font-size: 17px; font-weight: 500; color: rgba(250,252,253,0.6); margin: 0 0 6px; }
+    .expired-sub { font-size: 13px; color: rgba(250,252,253,0.35); }
+
+    /* ── Misc ── */
+    .error-msg { font-size: 13px; color: #E24B4A; margin-bottom: 14px; line-height: 1.5; }
+    .notice { font-size: 11.5px; color: rgba(250,252,253,0.3); line-height: 1.6; text-align: center; margin-top: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="portal-wrap" id="app">
+  <div class="portal-header">
+    <div class="vimeo-logo">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="32" height="32" rx="6" fill="#17D5FF" fill-opacity="0.12"/>
+        <path d="M25.6 11.04c-.1 2.28-1.68 5.4-4.74 9.36C17.78 24.48 15.2 26.4 13.08 26.4c-1.32 0-2.44-1.22-3.36-3.66l-1.84-6.76C7.2 13.54 6.52 12.4 5.8 12.4c-.16 0-.72.34-1.68.98L3 12.08c1.06-.94 2.1-1.88 3.12-2.82 1.4-1.22 2.46-1.86 3.16-1.92 1.66-.16 2.68.98 3.06 3.42.42 2.62.7 4.26.86 4.92.48 2.18.99 3.26 1.56 3.26.44 0 1.1-.7 1.98-2.1.88-1.4 1.36-2.46 1.42-3.18.12-1.2-.34-1.8-1.42-1.8-.5 0-1.02.12-1.56.34.98-3.28 2.9-4.88 5.72-4.78 2.08.06 3.06 1.42 2.96 4.02z" fill="#17D5FF"/>
+      </svg>
+      <span class="vimeo-logo-text">Secure Upload</span>
+    </div>
+    <div class="expiry-badge" id="expiry-badge">
+      <div class="expiry-dot" id="expiry-dot"></div>
+      <span id="expiry-label">Loading…</span>
+    </div>
+  </div>
+  <div class="portal-body" id="portal-body"></div>
+</div>
+
+<script>
+(function () {
+  // ── Config ──────────────────────────────────────────────────────────────────
+  // Point this at your deployed backend. In local dev: http://localhost:3001
+  const API          = 'http://localhost:3001';
+  const EXPIRY_DAYS  = 7;
+  const CHUNK_SIZE   = 128 * 1024 * 1024; // 128 MB TUS chunks
+  const CREATED_KEY  = 'vimeo_portal_created_v1';
+
+  // ── Expiry ─────────────────────────────────────────────────────────────────
+  function getCreatedAt() {
+    try { const v = localStorage.getItem(CREATED_KEY); if (v) return parseInt(v, 10); } catch (e) {}
+    const now = Date.now();
+    try { localStorage.setItem(CREATED_KEY, String(now)); } catch (e) {}
+    return now;
+  }
+
+  const createdAt = getCreatedAt();
+
+  function msLeft() { return (createdAt + EXPIRY_DAYS * 86400000) - Date.now(); }
+
+  function formatExpiry(ms) {
+    if (ms <= 0) return 'Expired';
+    const d = Math.floor(ms / 86400000), h = Math.floor((ms % 86400000) / 3600000);
+    if (d > 0) return `Expires in ${d}d ${h}h`;
+    return `Expires in ${h}h ${Math.floor((ms % 3600000) / 60000)}m`;
+  }
+
+  function formatBytes(b) {
+    if (b < 1048576)    return (b / 1024).toFixed(1) + ' KB';
+    if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+    return (b / 1073741824).toFixed(2) + ' GB';
+  }
+
+  function updateExpiryUI() {
+    const ms = msLeft();
+    document.getElementById('expiry-label').textContent = formatExpiry(ms);
+    if (ms <= 0) document.getElementById('expiry-dot').style.background = '#E24B4A';
+  }
+  updateExpiryUI();
+  setInterval(updateExpiryUI, 30000);
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  let S = {
+    file: null, name: '', notifyEmail: '', agreed: false,
+    phase: 'idle', // idle | creating | uploading | adding | notifying | done | error
+    progress: 0, uploaded: 0,
+    videoId: null, uploadUrl: null, error: null
+  };
+
+  function canSubmit() {
+    return S.file && S.name.trim().length >= 2 && S.agreed;
+  }
+
+  // ── API calls ──────────────────────────────────────────────────────────────
+  async function apiPost(path, body) {
+    const res = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    return data;
+  }
+
+  async function apiPut(path, body) {
+    const res = await fetch(`${API}${path}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+    return data;
+  }
+
+  async function tusUpload(file, uploadUrl, onProgress) {
+    let offset = 0;
+    while (offset < file.size) {
+      const chunk = file.slice(offset, offset + CHUNK_SIZE);
+      const res = await fetch(uploadUrl, {
+        method: 'PATCH',
+        headers: {
+          'Tus-Resumable':  '1.0.0',
+          'Upload-Offset':  String(offset),
+          'Content-Type':   'application/offset+octet-stream',
+          'Content-Length': String(chunk.size)
+        },
+        body: chunk
+      });
+      if (!res.ok) throw new Error(`Upload chunk failed at byte ${offset}: ${res.status}`);
+      offset = parseInt(res.headers.get('Upload-Offset') || '0', 10);
+      onProgress(offset, file.size);
+    }
+  }
+
+  // ── Upload flow ────────────────────────────────────────────────────────────
+  async function startUpload() {
+    S.phase = 'creating'; S.error = null;
+    render();
+
+    try {
+      // 1 — Create video on Vimeo (via backend — token stays server-side)
+      const init = await apiPost('/api/init-upload', {
+        fileName:     S.file.name,
+        fileSize:     S.file.size,
+        uploaderName: S.name
+      });
+      S.videoId   = init.videoId;
+      S.uploadUrl = init.uploadUrl;
+
+      // 2 — TUS upload direct from browser to Vimeo
+      S.phase = 'uploading';
+      render();
+
+      await tusUpload(S.file, S.uploadUrl, (uploaded, total) => {
+        S.uploaded  = uploaded;
+        S.progress  = Math.round((uploaded / total) * 100);
+        const fill  = document.getElementById('prog-fill');
+        const pct   = document.getElementById('prog-pct');
+        const det   = document.getElementById('prog-detail');
+        if (fill) fill.style.width   = S.progress + '%';
+        if (pct)  pct.textContent    = S.progress + '%';
+        if (det)  det.textContent    = `${formatBytes(uploaded)} of ${formatBytes(S.file.size)}`;
+      });
+
+      // 3 — Add to folder
+      S.phase = 'adding';
+      render();
+      await apiPut('/api/add-to-folder', { videoId: S.videoId });
+
+      // 4 — Send email notification (only if an address was provided)
+      if (S.notifyEmail.trim()) {
+        S.phase = 'notifying';
+        render();
+        await apiPost('/api/notify', {
+          uploaderName: S.name,
+          fileName:     S.file.name,
+          fileSize:     S.file.size,
+          videoId:      S.videoId,
+          notifyEmail:  S.notifyEmail.trim()
+        });
+      }
+
+      S.phase = 'done';
+      render();
+
+    } catch (e) {
+      S.phase = 'error'; S.error = e.message;
+      render();
+    }
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  function render() {
+    if (msLeft() <= 0) { renderExpired(); return; }
+    const body = document.getElementById('portal-body');
+    if      (S.phase === 'done')                           renderSuccess(body);
+    else if (S.phase === 'uploading')                      renderUploading(body);
+    else if (['creating','adding','notifying'].includes(S.phase)) renderWorking(body);
+    else                                                   renderForm(body);
+  }
+
+  function renderForm(body) {
+    body.innerHTML = `
+      <p class="section-label">Secure video submission</p>
+      <h1 class="section-title">Upload your video</h1>
+
+      <div class="config-panel">
+        <div class="config-header"><i class="ti ti-shield-check" style="font-size:12px;vertical-align:-1px;margin-right:5px"></i>Portal configuration</div>
+        <div class="config-row"><span class="config-key">Destination folder</span><span class="config-val"><i class="ti ti-folder" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Videos uploaded by others</span></div>
+        <div class="config-row"><span class="config-key">Access</span><span class="config-val"><i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Upload only</span></div>
+        <div class="config-row"><span class="config-key">Video privacy</span><span class="config-val"><i class="ti ti-lock" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Private (team only)</span></div>
+      </div>
+
+      <div class="field">
+        <label for="uploader-name">Your name <span style="color:#17D5FF">*</span></label>
+        <input type="text" id="uploader-name" placeholder="e.g. Alex Johnson" value="${S.name}" maxlength="80" autocomplete="name" />
+      </div>
+
+      <div class="field">
+        <label for="notify-email">
+          <i class="ti ti-bell" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>
+          Notify email address
+          <span style="color:rgba(250,252,253,0.35);font-weight:400;margin-left:4px;">(optional — who should be notified on upload?)</span>
+        </label>
+        <input type="email" id="notify-email" placeholder="e.g. videoteam@yourorg.com" value="${S.notifyEmail}" maxlength="200" autocomplete="email" />
+      </div>
+
+      ${S.file ? `
+        <div class="file-queued">
+          <i class="ti ti-video file-icon"></i>
+          <div class="file-info">
+            <div class="file-name">${S.file.name}</div>
+            <div class="file-size">${formatBytes(S.file.size)}</div>
+          </div>
+          <i class="ti ti-x file-remove" id="remove-file" title="Remove" aria-label="Remove file"></i>
+        </div>
+      ` : `
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" accept="video/*" id="file-input" aria-label="Choose video file" />
+          <div class="drop-icon"><i class="ti ti-cloud-upload"></i></div>
+          <p class="drop-primary">Drop your video here</p>
+          <p class="drop-sub">or <span>browse files</span> — MP4, MOV, AVI, MKV and more</p>
+        </div>
+      `}
+
+      <div class="tc-box">
+        <div class="tc-scroll">
+          <strong style="color:rgba(250,252,253,0.6);font-weight:500;">Terms &amp; Conditions</strong><br><br>
+          By uploading content to this portal you confirm that: (1) you are authorised to share this material with the video team; (2) the content does not include personally identifiable information beyond what is required for this submission; (3) the file will be stored securely on Vimeo's infrastructure and accessible only to designated team members; (4) you accept that uploaded content may be processed, edited, or published in line with your organisation's video production guidelines; (5) you will not upload material that infringes copyright, contains confidential client data without consent, or violates applicable law. Uploads are logged with your name, timestamp, and file name for audit purposes.
+        </div>
+        <label class="tc-agree">
+          <input type="checkbox" id="tc-check" ${S.agreed ? 'checked' : ''} />
+          <span class="tc-agree-text">I have read and agree to the terms above</span>
+        </label>
+      </div>
+
+      ${S.phase === 'error' ? `<p class="error-msg"><i class="ti ti-alert-circle" style="vertical-align:-2px;margin-right:5px"></i>${S.error}</p>` : ''}
+
+      <button class="upload-btn" id="upload-btn" ${canSubmit() ? '' : 'disabled'}>
+        <i class="ti ti-upload" style="font-size:15px;vertical-align:-2px;margin-right:7px"></i>Upload to Vimeo
+      </button>
+      <p class="notice">Files are sent directly to Vimeo over TLS. No data passes through third-party servers.</p>
+    `;
+
+    document.getElementById('uploader-name').addEventListener('input', function (e) {
+      S.name = e.target.value;
+      document.getElementById('upload-btn').disabled = !canSubmit();
+    });
+
+    document.getElementById('notify-email').addEventListener('input', function (e) {
+      S.notifyEmail = e.target.value;
+    });
+
+    const tc = document.getElementById('tc-check');
+    if (tc) tc.addEventListener('change', function (e) {
+      S.agreed = e.target.checked;
+      document.getElementById('upload-btn').disabled = !canSubmit();
+    });
+
+    const dz = document.getElementById('drop-zone');
+    const fi = document.getElementById('file-input');
+    if (dz && fi) {
+      dz.addEventListener('dragover',  function (e) { e.preventDefault(); dz.classList.add('drag-over'); });
+      dz.addEventListener('dragleave', function ()  { dz.classList.remove('drag-over'); });
+      dz.addEventListener('drop', function (e) {
+        e.preventDefault(); dz.classList.remove('drag-over');
+        const f = e.dataTransfer.files[0];
+        if (f && f.type.startsWith('video/')) { S.file = f; render(); }
+      });
+      fi.addEventListener('change', function (e) {
+        if (e.target.files[0]) { S.file = e.target.files[0]; render(); }
+      });
+    }
+
+    const rm = document.getElementById('remove-file');
+    if (rm) rm.addEventListener('click', function () { S.file = null; render(); });
+
+    document.getElementById('upload-btn').addEventListener('click', function () {
+      if (canSubmit()) startUpload();
+    });
+  }
+
+  const PHASE_LABELS = {
+    creating:  { label: 'Preparing upload', sub: 'Creating video record on Vimeo…' },
+    adding:    { label: 'Finishing up',      sub: 'Adding to folder…' },
+    notifying: { label: 'Sending notification', sub: 'Emailing the video team…' }
+  };
+
+  function renderWorking(body) {
+    const { label, sub } = PHASE_LABELS[S.phase] || {};
+    body.innerHTML = `
+      <p class="section-label">${label}</p>
+      <h2 class="section-title" style="font-size:16px;">${sub}</h2>
+      <div class="uploading-file">
+        <div class="upload-spinner"></div>
+        <div class="file-info">
+          <div class="file-name">${S.file.name}</div>
+          <div class="file-size">${formatBytes(S.file.size)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderUploading(body) {
+    body.innerHTML = `
+      <p class="section-label">Uploading</p>
+      <h2 class="section-title" style="font-size:16px;">Sending to Vimeo…</h2>
+      <div class="uploading-file">
+        <div class="upload-spinner"></div>
+        <div class="file-info">
+          <div class="file-name">${S.file.name}</div>
+          <div class="file-size">${formatBytes(S.file.size)}</div>
+        </div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="prog-fill" style="width:${S.progress}%"></div>
+        </div>
+        <div class="progress-labels">
+          <span>Progress</span>
+          <span id="prog-pct">${S.progress}%</span>
+        </div>
+        <p class="progress-detail" id="prog-detail">${formatBytes(S.uploaded)} of ${formatBytes(S.file.size)}</p>
+      </div>
+      <p class="notice">Do not close this tab while uploading.</p>
+    `;
+  }
+
+  function renderSuccess(body) {
+    const vimeoUrl = `https://vimeo.com/${S.videoId}`;
+    body.innerHTML = `
+      <div class="success-state">
+        <div class="success-icon"><i class="ti ti-check"></i></div>
+        <p class="success-title">Upload complete</p>
+        <p class="success-sub">
+          <strong style="color:#FAFCFD;font-weight:500;">${S.file.name}</strong> has been delivered<br>
+          to <em style="color:#17D5FF;">Videos uploaded by others</em>.<br>
+          <span style="opacity:0.6;">Submitted by ${S.name}.</span>
+          ${S.notifyEmail ? `<br><span style="opacity:0.5;font-size:12px;"><i class="ti ti-mail" style="vertical-align:-1px;margin-right:3px"></i>Notification sent to ${S.notifyEmail}</span>` : ''}
+        </p>
+        <a class="vimeo-link" href="${vimeoUrl}" target="_blank" rel="noopener">
+          <i class="ti ti-external-link" style="font-size:14px"></i>View on Vimeo
+        </a><br>
+        <button class="upload-another" id="upload-another">Upload another video</button>
+      </div>
+    `;
+    document.getElementById('upload-another').addEventListener('click', function () {
+      S = { file: null, name: S.name, notifyEmail: S.notifyEmail, agreed: false, phase: 'idle', progress: 0, uploaded: 0, videoId: null, uploadUrl: null, error: null };
+      render();
+    });
+  }
+
+  function renderExpired() {
+    document.getElementById('portal-body').innerHTML = `
+      <div class="expired-state">
+        <div class="expired-icon"><i class="ti ti-lock"></i></div>
+        <p class="expired-title">This upload page has expired</p>
+        <p class="expired-sub">Access to this portal expired after ${EXPIRY_DAYS} days.<br>Please request a new link from your video team.</p>
+      </div>`;
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

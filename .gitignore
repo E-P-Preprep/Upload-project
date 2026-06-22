@@ -1,0 +1,17 @@
+# Environment variables (keep secrets/tokens out of version control)
+.env
+.env.*
+!.env.example
+
+# Local corporate proxy (Zscaler) CA cert — machine-specific
+zscaler-ca.pem
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# macOS
+.DS_Store

@@ -10,6 +10,12 @@ const VIMEO_API   = 'https://api.vimeo.com';
 const VIMEO_TOKEN = process.env.VIMEO_TOKEN;
 const FOLDER_ID   = process.env.VIMEO_FOLDER_ID;
 
+// The folder (Vimeo "project") URI passed to the create-video call so the video
+// lands in the folder at creation. Accepts either a bare folder ID or a full URI.
+const FOLDER_URI = FOLDER_ID
+  ? (FOLDER_ID.includes('/') ? FOLDER_ID : `/me/projects/${FOLDER_ID}`)
+  : null;
+
 function vimeoHeaders() {
   return {
     'Authorization': `bearer ${VIMEO_TOKEN}`,
@@ -32,18 +38,24 @@ export async function initUpload({ fileName, fileSize, uploaderName }) {
     `Uploaded on: ${new Date().toISOString()}`,
   ].join('\n');
 
+  const payload = {
+    name:        title,
+    description,
+    upload: {
+      approach: 'tus',
+      size:     fileSize,
+    },
+    privacy: { view: 'nobody' }, // private — team access only
+  };
+
+  // Place the video directly in the configured folder at creation time.
+  if (FOLDER_URI) payload.folder_uri = FOLDER_URI;
+  else console.warn('[vimeo] VIMEO_FOLDER_ID not set — video will not be placed in a folder');
+
   const res = await fetch(`${VIMEO_API}/me/videos`, {
     method:  'POST',
     headers: vimeoHeaders(),
-    body: JSON.stringify({
-      name:        title,
-      description,
-      upload: {
-        approach: 'tus',
-        size:     fileSize,
-      },
-      privacy: { view: 'nobody' }, // private — team access only
-    }),
+    body: JSON.stringify(payload),
   });
 
   if (!res.ok) {
@@ -62,27 +74,32 @@ export async function initUpload({ fileName, fileSize, uploaderName }) {
 }
 
 /**
- * Move a video into the configured Vimeo folder.
+ * Poll a video until it is playable — i.e. transcoding is at least partially
+ * complete and Vimeo reports `is_playable: true` (equivalently play.status
+ * "playable"). Used to hold the notification email until the video can be watched.
  *
  * @param {string} videoId
+ * @param {{ intervalMs?: number, maxMs?: number }} [opts]
+ * @returns {Promise<boolean>} true once playable; false on transcode error or timeout
  */
-export async function addToFolder(videoId) {
-  if (!FOLDER_ID) {
-    console.warn('[vimeo] VIMEO_FOLDER_ID not set — skipping folder assignment');
-    return;
-  }
+export async function waitUntilPlayable(videoId, { intervalMs = 10000, maxMs = 30 * 60 * 1000 } = {}) {
+  const deadline = Date.now() + maxMs;
 
-  const res = await fetch(
-    `${VIMEO_API}/me/projects/${FOLDER_ID}/videos/${videoId}`,
-    {
-      method:  'PUT',
-      headers: vimeoHeaders(),
+  while (Date.now() < deadline) {
+    const res = await fetch(
+      `${VIMEO_API}/videos/${videoId}?fields=is_playable,play.status,transcode.status`,
+      { headers: vimeoHeaders() }
+    );
+
+    if (res.ok) {
+      const v = await res.json();
+      if (v.is_playable === true || v.play?.status === 'playable') return true;
+      if (v.transcode?.status === 'error') return false; // transcoding failed — stop waiting
     }
-  );
+    // Non-OK responses are treated as transient; keep polling until the deadline.
 
-  // 204 No Content = success; anything else is an error
-  if (!res.ok && res.status !== 204) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Vimeo folder API ${res.status}`);
+    await new Promise((r) => setTimeout(r, intervalMs));
   }
+
+  return false; // never became playable within maxMs
 }
